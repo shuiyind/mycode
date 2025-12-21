@@ -3,7 +3,7 @@
 // @namespace    https://github.com/shuiyind/mycode
 // @version      1.5
 // @description  使用 OpenCC-JS 针对 M-Team 优化的繁转简脚本
-// @author       shuiyind
+// @author       Gemini
 // @match        https://*.m-team.cc/*
 // @match        https://*.m-team.io/*
 // @updateURL    https://raw.githubusercontent.com/shuiyind/mycode/main/m-team-t2s/m-team-t2s.user.js
