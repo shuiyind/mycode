@@ -17,7 +17,7 @@
     'use strict';
 
     // 1. 初始化转换器 (t2cn 对应繁转简)
-    const converter = OpenCC.Converter({ from: 'hk', to: 'cn' });
+    const converter = OpenCC.Converter({ from: 'twp', to: 'cn' });
 
     // 2. 核心转换逻辑
     function doConvert(node) {
