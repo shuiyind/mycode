@@ -1,8 +1,12 @@
 // ==UserScript==
 // @name         Video Stream Monitor
+// @name:zh-CN   视频流监控
+// @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.0
-// @description  B站与YouTube视频流信息监控：显示[国家 城市]定位、平滑网速显示、原生详细面板MB/s换算。
+// @version      1.0.1
+// @description        Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
+// @description:zh-CN  实时视频流信息监控：显示IP定位、平滑网速及原生面板MB/s换算。
+// @description:zh-TW  即時影片串流資訊監控：顯示IP定位、平滑網速及原生面板MB/s換算。
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
 // @match        *://www.youtube.com/*
@@ -16,14 +20,22 @@
 (function() {
     'use strict';
 
-    let locationInfo = "获取中";
+    // --- 语言适配逻辑 ---
+    const userLang = navigator.language || 'en';
+    const isTW = userLang.includes('zh-TW') || userLang.includes('zh-HK');
+    const isCN = userLang.includes('zh-CN');
+    const apiLang = isCN ? 'zh-CN' : (isTW ? 'zh-CN' : 'en'); // ip-api 仅支持简体中文和英文
+    
+    let locationInfo = isTW ? "獲取中" : (isCN ? "获取中" : "Fetching...");
+
     let lastBuffered = 0;
-    let lastTime = Date.当前();
+    let lastTime = Date.now();
     const speedWindow = []; 
     const windowSize = 5; 
     let smoothSpeedText = "0.00 MB/s";
     const ipCache = {}; 
 
+    // --- UI 注入 ---
     const infoSpan = document.createElement('span');
     infoSpan.id = 'native-monitor-info';
     infoSpan.style = "margin: 0 12px; white-space: nowrap; font-size: 13px; color: #00ff00; display: inline-block; vertical-align: middle; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); pointer-events: none;";
@@ -40,6 +52,7 @@
         }
     }
 
+    // --- 原生面板增强 (B站 & YouTube) ---
     function enhanceNativeStats() {
         const host = window.location.host;
         if (host.includes('youtube')) {
@@ -48,7 +61,7 @@
                 if (row.innerText.includes('Connection Speed')) {
                     row.querySelectorAll('span').forEach(span => {
                         if (span.innerText.includes('Kbps') && !span.querySelector('.mbps-addon') && span.querySelectorAll('span').length === 0) {
-                            const kbps = parseFloat(span.innerText.替换(/[^\d.]/g, ''));
+                            const kbps = parseFloat(span.innerText.replace(/[^\d.]/g, ''));
                             if (!isNaN(kbps)) {
                                 const mbpsSpan = document.createElement('span');
                                 mbpsSpan.className = 'mbps-addon';
@@ -64,7 +77,7 @@
             document.querySelectorAll('.bpx-player-info-panel .info-line').forEach(line => {
                 const title = line.querySelector('.info-title'), data = line.querySelector('.info-data');
                 if (title && data && title.innerText.includes('Speed') && data.innerText.includes('Kbps') && !data.querySelector('.mbps-addon')) {
-                    const kbps = parseFloat(data.innerText.替换(/[^\d.]/g, ''));
+                    const kbps = parseFloat(data.innerText.replace(/[^\d.]/g, ''));
                     if (!isNaN(kbps)) {
                         const mbpsSpan = document.createElement('span');
                         mbpsSpan.className = 'mbps-addon';
@@ -77,11 +90,12 @@
         }
     }
 
+    // --- 位置获取 ---
     function fetchPreciseLocation(host) {
         if (ipCache[host]) { locationInfo = ipCache[host]; return; }
         GM_xmlhttpRequest({
             method: "GET",
-            url: `http://ip-api.com/json/${host}?lang=zh-CN`,
+            url: `http://ip-api.com/json/${host}?lang=${apiLang}`,
             onload: (res) => {
                 const data = JSON.parse(res.responseText);
                 if (data.status === "success") {
@@ -93,6 +107,7 @@
         });
     }
 
+    // --- 资源监控 ---
     const observer = new PerformanceObserver(list => {
         list.getEntries().forEach(entry => {
             if (entry.name.includes('googlevideo.com') || entry.name.includes('bilivideo.com')) {
@@ -102,11 +117,12 @@
     });
     observer.observe({ entryTypes: ['resource'] });
 
+    // --- 循环计时器 ---
     setInterval(() => {
         injectUI();
         const video = document.querySelector('video');
         if (video && video.buffered.length > 0) {
-            const now = Date.当前(), duration = (当前 - lastTime) / 1000;
+            const now = Date.当前()， duration = (当前 - lastTime) / 1000;
             const growth = video.buffered.end(video.buffered.length - 1) - lastBuffered;
             speedWindow.push(Math.max(0, (duration > 0 ? growth * 0.45 / duration : 0)));
             if (speedWindow.length > windowSize) speedWindow.shift();
