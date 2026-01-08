@@ -7,6 +7,7 @@
 ### 🟢 油猴脚本 (Userscripts)
 | 项目名称 | 路径 | 功能描述 | 安装链接 (Raw) |
 | :--- | :--- | :--- | :--- |
+| **Video Stream Monitor** | `/video-stream-monitor/` | B站与YT监控：显示IP定位、平滑网速及原生面板 MB/s 换算 | [立即安装](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js) |
 | **M-Team 繁简转换** | `/m-team-t2s/` | 基于 OpenCC-JS，将 M-Team 站内繁体转为简体 | [立即安装](https://raw.githubusercontent.com/shuiyind/mycode/main/m-team-t2s/m-team-t2s.user.js) |
 
 ### 🔵 实用工具 (Tools & Snippets)
@@ -23,7 +24,8 @@
 2. **对于代码**：请参考各子文件夹下的 `README.md` 获取具体运行环境要求。
 
 ## 📝 最近更新
-- **2025-12-21**: 完成 M-Team 繁简转换脚本 (v1.5) 的隔离部署。
+- **2026-01-08**: 发布 **Video Stream Monitor (v1.0.0)**，支持双平台原生面板增强。
+- **2025-12-21**: 完成 **M-Team 繁简转换脚本 (v1.5)** 的隔离部署。
 
 ---
 *保持好奇，持续探索。*
