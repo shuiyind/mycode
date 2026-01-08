@@ -3,15 +3,15 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.1
-// @description        Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
+// @version      1.0.3
+// @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @description:zh-CN  实时视频流信息监控：显示IP定位、平滑网速及原生面板MB/s换算。
 // @description:zh-TW  即時影片串流資訊監控：顯示IP定位、平滑網速及原生面板MB/s換算。
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
 // @match        *://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
-// @connect      ip-api.com
+// @connect      ipapi.co
 // @run-at       document-end
 // @downloadURL  https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js
 // @updateURL    https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js
@@ -20,14 +20,12 @@
 (function() {
     'use strict';
 
-    // --- 语言适配逻辑 ---
+    // --- 逻辑与 UI 配置 ---
     const userLang = navigator.language || 'en';
-    const isTW = userLang.includes('zh-TW') || userLang.includes('zh-HK');
     const isCN = userLang.includes('zh-CN');
-    const apiLang = isCN ? 'zh-CN' : (isTW ? 'zh-CN' : 'en'); // ip-api 仅支持简体中文和英文
+    const isTW = userLang.includes('zh-TW') || userLang.includes('zh-HK');
     
     let locationInfo = isTW ? "獲取中" : (isCN ? "获取中" : "Fetching...");
-
     let lastBuffered = 0;
     let lastTime = Date.now();
     const speedWindow = []; 
@@ -35,24 +33,27 @@
     let smoothSpeedText = "0.00 MB/s";
     const ipCache = {}; 
 
-    // --- UI 注入 ---
     const infoSpan = document.createElement('span');
     infoSpan.id = 'native-monitor-info';
-    infoSpan.style = "margin: 0 12px; white-space: nowrap; font-size: 13px; color: #00ff00; display: inline-block; vertical-align: middle; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); pointer-events: none;";
+    infoSpan.style = "margin: 0 12px; white-space: nowrap; font-size: 13px; color: #00ff00; display: inline-block; vertical-align: middle; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); pointer-events: none; transition: all 0.3s;";
 
     function injectUI() {
         if (document.getElementById('native-monitor-info')) return;
         const host = window.location.host;
         if (host.includes('youtube')) {
             const ytRight = document.querySelector('.ytp-right-controls');
-            if (ytRight) { infoSpan.style.lineHeight = "48px"; ytRight.insertBefore(infoSpan, ytRight.firstChild); }
+            if (ytRight) { 
+                infoSpan.style.lineHeight = "48px"; 
+                ytRight.insertBefore(infoSpan, ytRight.firstChild); 
+            }
         } else if (host.includes('bilibili')) {
-            const biliRight = document.querySelector('.bpx-player-control-bottom-right');
-            if (biliRight) biliRight.insertBefore(infoSpan, biliRight.firstChild);
+            const biliRight = document.querySelector('.bpx-player-control-bottom-right') || document.querySelector('.squirtle-controller-right');
+            if (biliRight) {
+                biliRight.insertBefore(infoSpan, biliRight.firstChild);
+            }
         }
     }
 
-    // --- 原生面板增强 (B站 & YouTube) ---
     function enhanceNativeStats() {
         const host = window.location.host;
         if (host.includes('youtube')) {
@@ -76,7 +77,7 @@
         } else if (host.includes('bilibili')) {
             document.querySelectorAll('.bpx-player-info-panel .info-line').forEach(line => {
                 const title = line.querySelector('.info-title'), data = line.querySelector('.info-data');
-                if (title && data && title.innerText.includes('Speed') && data.innerText.includes('Kbps') && !data.querySelector('.mbps-addon')) {
+                if (title && data && (title.innerText.includes('Speed') || title.innerText.includes('速度')) && data.innerText.includes('Kbps') && !data.querySelector('.mbps-addon')) {
                     const kbps = parseFloat(data.innerText.replace(/[^\d.]/g, ''));
                     if (!isNaN(kbps)) {
                         const mbpsSpan = document.createElement('span');
@@ -90,48 +91,61 @@
         }
     }
 
-    // --- 位置获取 ---
-    function fetchPreciseLocation(host) {
-        if (ipCache[host]) { locationInfo = ipCache[host]; return; }
+    function fetchPreciseLocation(hostname) {
+        if (ipCache[hostname]) { locationInfo = ipCache[hostname]; return; }
+        if (!hostname.includes('googlevideo') && !hostname.includes('bilivideo')) return;
+
         GM_xmlhttpRequest({
             method: "GET",
-            url: `http://ip-api.com/json/${host}?lang=${apiLang}`,
+            url: `https://ipapi.co/${hostname}/json/`,
             onload: (res) => {
-                const data = JSON.parse(res.responseText);
-                if (data.status === "success") {
-                    const resStr = (data.country === data.city || !data.city) ? data.country : `${data.country} ${data.city}`;
-                    locationInfo = resStr;
-                    ipCache[host] = resStr;
-                }
+                try {
+                    const data = JSON.parse(res.responseText);
+                    if (data.country_name) {
+                        const resStr = `[${data.country_code} ${data.city || ''}]`.trim();
+                        locationInfo = resStr;
+                        ipCache[hostname] = resStr;
+                    }
+                } catch(e) { console.error("Monitor: IP fetch failed", e); }
             }
         });
     }
 
-    // --- 资源监控 ---
     const observer = new PerformanceObserver(list => {
         list.getEntries().forEach(entry => {
             if (entry.name.includes('googlevideo.com') || entry.name.includes('bilivideo.com')) {
-                fetchPreciseLocation(new URL(entry.name).hostname);
+                try {
+                    const url = new URL(entry.name);
+                    fetchPreciseLocation(url.hostname);
+                } catch(e) {}
             }
         });
     });
     observer.observe({ entryTypes: ['resource'] });
 
-    // --- 循环计时器 ---
     setInterval(() => {
         injectUI();
         const video = document.querySelector('video');
         if (video && video.buffered.length > 0) {
-            const now = Date.当前()， duration = (当前 - lastTime) / 1000;
-            const growth = video.buffered.end(video.buffered.length - 1) - lastBuffered;
-            speedWindow.push(Math.max(0, (duration > 0 ? growth * 0.45 / duration : 0)));
+            const now = Date.当前();
+            const duration = (当前 - lastTime) / 1000;
+            const currentEnd = video.buffered.end(video.buffered.length - 1);
+            const growth = currentEnd - lastBuffered;
+            
+            if (duration > 0 && growth >= 0) {
+                const speed = (growth * 0.45) / duration; 
+                speedWindow.push(speed);
+            }
+            
             if (speedWindow.length > windowSize) speedWindow.shift();
-            smoothSpeedText = (speedWindow.reduce((a, b) => a + b, 0) / speedWindow.length).toFixed(2) + " MB/s";
-            lastBuffered = video.buffered.end(video.buffered.length - 1);
+            const avgSpeed = speedWindow.length > 0 ? speedWindow.reduce((a, b) => a + b, 0) / speedWindow.length : 0;
+            smoothSpeedText = avgSpeed.toFixed(2) + " MB/s";
+            
+            lastBuffered = currentEnd;
             lastTime = now;
         }
         infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
     }, 1000);
 
-    setInterval(enhanceNativeStats, 200);
+    setInterval(enhanceNativeStats, 500);
 })();
