@@ -1,4 +1,4 @@
-# My Code Collection (shuiyind)
+# My Code Collection
 
 这里存储了我的个人代码片段、自动化脚本和工具配置。
 
