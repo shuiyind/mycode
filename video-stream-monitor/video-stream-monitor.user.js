@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name         Video Stream Monitor
-// @namespace    https://github.com/你的用户名/你的仓库名
+// @namespace    https://github.com/shuiyind/mycode
 // @version      1.0.0
-// @description  Display IP location and real-time smooth speed on Bilibili and YouTube. Add MB/s conversion to native stats panel.
-// @author       YourName
+// @description  B站与YouTube视频流信息监控：显示[国家 城市]定位、平滑网速显示、原生详细面板MB/s换算。
+// @author       shuiyind
 // @match        *://www.bilibili.com/video/*
 // @match        *://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
 // @connect      ip-api.com
 // @run-at       document-end
-// @downloadURL  https://raw.githubusercontent.com/你的用户名/你的仓库名/main/video-stream-monitor.user.js
-// @updateURL    https://raw.githubusercontent.com/你的用户名/你的仓库名/main/video-stream-monitor.user.js
+// @downloadURL  https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js
+// @updateURL    https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js
 // ==/UserScript==
 
 (function() {
