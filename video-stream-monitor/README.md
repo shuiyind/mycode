@@ -1,17 +1,16 @@
 # Video Stream Monitor
 
-一个轻量级的油猴脚本，用于在 Bilibili 和 YouTube 播放器上实时显示视频流信息。
+一个轻量级的油猴脚本，专为提升 YouTube 和 Bilibili 视频观看体验设计。
 
-### 核心功能
-* **地理位置识别**：自动解析视频流服务器 IP，显示 [国家 城市]。
-* **平滑网速显示**：采用滑动窗口算法，在控制栏右侧显示平稳的下载速度。
-* **原生面板增强**：在 YouTube "详细统计信息" 和 B 站 "视频统计信息" 的 Kbps 后面自动添加 **MB/s** 换算，解决单位直观性问题。
-* **零负担**：带内存缓存机制，避免重复请求 API。
+## 功能特性
+- **IP 定位**：自动解析视频流来源，在控制栏显示 `[国家 城市]`。
+- **平滑网速**：采用滑动窗口算法，每秒更新平稳的下载速度，避免数值剧烈跳动。
+- **面板换算**：在原生详细信息面板（Stats for Nerds）的 `Kbps` 数据后自动添加绿色的 `MB/s` 标注，更符合直觉。
+- **智能过滤**：仅针对下载速度进行换算，不干扰视频码率（DataRate）显示。
 
-### 安装方式
-1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 插件。
-2. 点击 [安装脚本](你的脚本原始链接.user.js)。
+## 安装
+[点击此处安装脚本](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js)
 
-### 预览
-* Bilibili: 显示于右侧功能区，就在画质设置左侧。
-* YouTube: 显示于右下角设置按钮左侧。
+## 预览
+- **Bilibili**: 显示在右侧控件组（画质/倍速）左邻。
+- **YouTube**: 显示在右侧设置按钮左邻。
