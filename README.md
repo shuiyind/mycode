@@ -13,7 +13,7 @@
 ### 🔵 Emby自定义样式 (Emby Custom CSS)
 | 项目名称 | 路径 | 功能描述 | 安装链接 (Raw) |
 | :--- | :--- | :--- | :--- |
-| **Emby Custom CSS** | `/emby-custom-css/` | **[开发中]** Emby媒体服务器界面自定义CSS样式 | [查看项目](https://raw.githubusercontent.com/shuiyind/mycode/main/emby-custom-css/) |
+| **Emby Custom CSS** | `/emby-custom-css/` | **[V1.0.0]** Emby媒体服务器界面自定义CSS样式，优化字体与界面 | [查看项目](https://raw.githubusercontent.com/shuiyind/mycode/main/emby-custom-css/) |
 
 ### 🔵 实用工具 (Tools & Snippets)
 * **待添加**：未来可放置 Python 脚本、Shell 工具等。
@@ -31,6 +31,7 @@
 本项目采用 [MIT License](LICENSE) 许可协议。
 
 ## 📝 最近更新
+- **2026-01-12**: 新增 **Emby Custom CSS (v1.0.0)**，提供霞鹜文楷字体优化及界面定制。
 - **2026-01-12**: 更新 **Video Stream Monitor (v1.0.15)**，优化B站播放器统计面板监听机制，解决MB/s标签闪烁问题。
 - **2025-12-21**: 完成 **M-Team 繁简转换脚本 (v1.5)** 的隔离部署。
 
