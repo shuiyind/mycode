@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.7
+// @version      1.0.8
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -23,10 +23,10 @@
     // 配置选项
     const CONFIG = {
         UPDATE_INTERVAL: 1000,
-        STATS_UPDATE_INTERVAL: 500,
+        STATS_UPDATE_INTERVAL: 1000, // 增加间隔以减少闪烁
         SPEED_WINDOW_SIZE: 5,
         CACHE_DURATION: 300000, // 5分钟缓存
-        TIMEOUT: 3000,
+        TIMEOUT: 5000, // 增加超时时间
         DEBUG: false
     };
 
@@ -100,9 +100,23 @@
         };
     }
 
+    // 节流函数 - 确保函数至少等待指定时间才执行下一次
+    function throttle(func, wait) {
+        let waiting = false;
+        return function executedFunction(...args) {
+            if (!waiting) {
+                func.apply(this, args);
+                waiting = true;
+                setTimeout(() => {
+                    waiting = false;
+                }, wait);
+            }
+        };
+    }
+
     // 注入UI元素
-    const debouncedInjectUI = debounce(function() {
-        if (uiInjected) return;
+    const throttledInjectUI = throttle(function() {
+        if (document.getElementById('native-monitor-info')) return;
 
         const host = window.location.host;
         let target = null;
@@ -126,12 +140,11 @@
         if (target) {
             const element = createUIElement();
             target.prepend(element);
-            uiInjected = true;
         }
-    }, 500);
+    }, 1000); // 每秒最多注入一次
 
     function injectUI() {
-        debouncedInjectUI();
+        throttledInjectUI();
     }
 
     // 检查缓存是否有效
@@ -175,7 +188,11 @@
             const cachedLocation = getLocationFromCache(hostname);
             if (cachedLocation) {
                 locationInfo = cachedLocation;
-                return Promise.resolve(cachedLocation);
+                // 确保UI更新
+                if (infoSpan) {
+                    infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
+                }
+                return;
             }
         }
 
@@ -190,88 +207,92 @@
         }
 
         // 发起网络请求
-        return new Promise((resolve, reject) => {
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: apiUrl,
-                timeout: CONFIG.TIMEOUT,
-                onload: (res) => {
-                    try {
-                        const data = JSON.parse(res.responseText);
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: apiUrl,
+            timeout: CONFIG.TIMEOUT,
+            onload: (res) => {
+                try {
+                    const data = JSON.parse(res.responseText);
 
-                        if (data.status === 'success' || (!data.status || data.status === 'ok')) {
-                            const country = data.country_code || data.countryCode || data.country || "";
-                            const city = data.city || "";
+                    if (data.status === 'success' || (!data.status || data.status === 'ok')) {
+                        const country = data.country_code || data.countryCode || data.country || "";
+                        const city = data.city || "";
 
-                            // 构建位置字符串
-                            let result = '';
-                            if (country && city) {
-                                result = `[${country} ${city}]`;
-                            } else if (country) {
-                                result = `[${country}]`;
-                            } else if (city) {
-                                result = `[${city}]`;
-                            } else {
-                                result = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                            }
-
-                            // 清理格式
-                            result = result.replace(/\s\]/, ']').trim();
-
-                            if (result !== '[ ]' && result !== '[]') {
-                                locationInfo = result;
-                                if (hostname) {
-                                    setCache(hostname, result);
-                                }
-                            } else {
-                                locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                            }
-
-                            resolve(result);
+                        // 构建位置字符串
+                        let result = '';
+                        if (country && city) {
+                            result = `[${country} ${city}]`;
+                        } else if (country) {
+                            result = `[${country}]`;
+                        } else if (city) {
+                            result = `[${city}]`;
                         } else {
-                            throw new Error(`API Error: ${data.message || 'Unknown error'}`);
+                            result = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
                         }
-                    } catch(e) {
-                        console.error('Location fetch error:', e);
-                        reject(e);
-                    }
-                },
-                onerror: (error) => {
-                    console.error('Network error when fetching location:', error);
 
-                    // 如果是查询特定主机名失败，尝试获取本地IP作为备用
-                    if (hostname) {
-                        fetchPreciseLocation('').then(resolve).catch(reject);
-                    } else {
-                        locationInfo = `[${lang.fallback}]`;
-                        reject(error);
-                    }
-                },
-                ontimeout: () => {
-                    console.warn(`Timeout when fetching location for ${hostname}`);
+                        // 清理格式
+                        result = result.replace(/\s\]/, ']').trim();
 
-                    if (hostname) {
-                        fetchPreciseLocation('').then(resolve).catch(reject);
+                        if (result !== '[ ]' && result !== '[]') {
+                            locationInfo = result;
+                            if (hostname) {
+                                setCache(hostname, result);
+                            }
+                        } else {
+                            locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
+                        }
                     } else {
-                        locationInfo = `[${lang.fallback}]`;
-                        reject(new Error('Timeout'));
+                        // API返回错误，使用fallback
+                        locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
+                    }
+
+                    // 确保UI更新
+                    if (infoSpan) {
+                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
+                    }
+                } catch(e) {
+                    console.error('Location fetch error:', e);
+                    // 出错时也更新UI
+                    locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
+                    if (infoSpan) {
+                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
                     }
                 }
-            });
-        }).catch(error => {
-            // 错误处理，确保即使出错也会更新UI
-            if (hostname) {
-                locationInfo = `[${lang.fallback}]`;
+            },
+            onerror: (error) => {
+                console.error('Network error when fetching location:', error);
+
+                // 如果是查询特定主机名失败，尝试获取本地IP作为备用
+                if (hostname) {
+                    setTimeout(() => fetchPreciseLocation(''), 1000);
+                } else {
+                    locationInfo = `[${lang.fallback}]`;
+                    if (infoSpan) {
+                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
+                    }
+                }
+            },
+            ontimeout: () => {
+                console.warn(`Timeout when fetching location for ${hostname}`);
+
+                if (hostname) {
+                    setTimeout(() => fetchPreciseLocation(''), 1000);
+                } else {
+                    locationInfo = `[${lang.fallback}]`;
+                    if (infoSpan) {
+                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
+                    }
+                }
             }
-            console.error('Error in fetchPreciseLocation:', error);
         });
     }
 
     // 初始获取一次当前位置
-    fetchPreciseLocation('');
+    setTimeout(() => fetchPreciseLocation(''), 2000); // 延迟2秒执行，确保页面加载完成
 
     // 性能观察器，用于检测视频流资源
-    const observer = new PerformanceObserver(debounce((list) => {
+    const observer = new PerformanceObserver((list) => {
         list.getEntries().forEach(entry => {
             if (entry.name.includes('googlevideo.com') || entry.name.includes('bilivideo.com')) {
                 try {
@@ -282,7 +303,7 @@
                 }
             }
         });
-    }, 1000)); // 防抖1秒，避免频繁调用
+    });
 
     try {
         observer.observe({ entryTypes: ['resource'] });
@@ -290,8 +311,8 @@
         if (CONFIG.DEBUG) console.error('PerformanceObserver setup failed:', e);
     }
 
-    // 增强原生统计面板
-    const debouncedEnhanceStats = debounce(function() {
+    // 增强原生统计面板 - 使用节流而不是防抖，确保至少执行一次
+    function enhanceNativeStats() {
         const host = window.location.host;
         const selectors = host.includes('youtube') ?
             '.ytp-sfn-content tr, .ytp-sfn-content > div' :
@@ -323,7 +344,7 @@
                 }
             }
         });
-    }, 1000); // 增加防抖时间到1秒，减少闪烁
+    }
 
     // 主更新循环
     setInterval(() => {
@@ -361,8 +382,9 @@
         }
     }, CONFIG.UPDATE_INTERVAL);
 
-    // 统计面板增强循环
-    setInterval(debouncedEnhanceStats, CONFIG.STATS_UPDATE_INTERVAL);
+    // 统计面板增强循环 - 使用节流包装
+    const throttledEnhanceStats = throttle(enhanceNativeStats, 2000); // 每2秒最多执行一次
+    setInterval(throttledEnhanceStats, CONFIG.STATS_UPDATE_INTERVAL);
 
     // 定期清理缓存
     setInterval(cleanupCache, CONFIG.CACHE_DURATION);
