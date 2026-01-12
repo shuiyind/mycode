@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.14
+// @version      1.0.15
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -94,9 +94,6 @@
     });
     observer.observe({ entryTypes: ['resource'] });
 
-    // 存储B站速度信息元素的引用，用于MutationObserver
-    const biliSpeedElements = new Map();
-
     function enhanceNativeStats() {
         const host = window.location.host;
         const selectors = host.includes('youtube') ?
@@ -126,11 +123,6 @@
                                 existingAddon.className = 'mbps-addon';
                                 existingAddon.style = "color:#00ff00; font-weight:bold; margin-left:5px;";
                                 dataNode.appendChild(existingAddon);
-
-                                // 如果是B站，保存元素引用用于后续监测
-                                if (!host.includes('youtube')) {
-                                    biliSpeedElements.set(dataNode, existingAddon);
-                                }
                             }
 
                             // 更新MB/s标签的文本
@@ -142,70 +134,75 @@
         });
     }
 
-    // 为B站创建MutationObserver来监听DOM变化
+    // 为B站创建更精确的MutationObserver来监听统计面板变化
     function setupBiliObserver() {
         if (!window.location.host.includes('bilibili')) {
             return; // 只在B站启用
         }
 
+        // 监听B站播放器信息面板的特定变化
         const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                // 检查是否有已知的速度元素受到影响
-                mutation.addedNodes.forEach(function(node) {
+            let shouldUpdate = false;
+
+            for (const mutation of mutations) {
+                // 检查是否是B站播放器信息面板的变化
+                if (mutation.target.classList &&
+                    (mutation.target.classList.contains('bpx-player-info-panel') ||
+                     mutation.target.closest('.bpx-player-info-panel'))) {
+                    shouldUpdate = true;
+                    break;
+                }
+
+                // 检查添加的节点是否包含info-line类
+                for (const node of mutation.addedNodes) {
                     if (node.nodeType === 1) { // ELEMENT_NODE
-                        // 检查添加的节点是否包含之前的速度元素
-                        biliSpeedElements.forEach(function(mbpsSpan, dataNode) {
-                            // 如果MB/s标签不见了，重新添加
-                            if (!dataNode.contains(mbpsSpan)) {
-                                // 重新获取kbps值并更新MB/s显示
-                                const kbpsText = dataNode.innerText;
-                                const kbpsMatch = kbpsText.match(/[\d.]+/);
-
-                                if (kbpsMatch) {
-                                    const kbps = parseFloat(kbpsMatch[0]);
-                                    if (!isNaN(kbps)) {
-                                        const mbpsValue = (kbps/8000).toFixed(2);
-                                        mbpsSpan.innerText = `(${mbpsValue} MB/s)`;
-                                        dataNode.appendChild(mbpsSpan); // 重新添加到父节点
-                                    }
-                                }
-                            }
-                        });
-                    }
-                });
-
-                // 检查属性变化（如class变化可能影响元素）
-                if (mutation.type === 'attributes' && mutation.target) {
-                    biliSpeedElements.forEach(function(mbpsSpan, dataNode) {
-                        if (mutation.target === dataNode || dataNode.contains(mutation.target)) {
-                            // 如果目标元素或其子元素发生变化，确保MB/s标签仍然存在
-                            if (!dataNode.contains(mbpsSpan)) {
-                                // 重新获取kbps值并更新MB/s显示
-                                const kbpsText = dataNode.innerText;
-                                const kbpsMatch = kbpsText.match(/[\d.]+/);
-
-                                if (kbpsMatch) {
-                                    const kbps = parseFloat(kbpsMatch[0]);
-                                    if (!isNaN(kbps)) {
-                                        const mbpsValue = (kbps/8000).toFixed(2);
-                                        mbpsSpan.innerText = `(${mbpsValue} MB/s)`;
-                                        dataNode.appendChild(mbpsSpan); // 重新添加到父节点
-                                    }
-                                }
-                            }
+                        if (node.classList &&
+                           (node.classList.contains('info-line') ||
+                            node.querySelector('.info-line'))) {
+                            shouldUpdate = true;
+                            break;
                         }
+                    }
+                }
+
+                if (shouldUpdate) break;
+            }
+
+            if (shouldUpdate) {
+                // 延迟一点执行，确保DOM完全更新
+                setTimeout(() => {
+                    enhanceNativeStats();
+                }, 50);
+            }
+        });
+
+        // 查找并监听B站播放器信息面板
+        const infoPanel = document.querySelector('.bpx-player-info-panel');
+        if (infoPanel) {
+            observer.observe(infoPanel, {
+                childList: true,
+                subtree: true,
+                attributes: false // 我们主要关心元素的添加/删除，而不是属性变化
+            });
+        } else {
+            // 如果还没加载，等待它出现
+            const waitForPanel = setInterval(() => {
+                const panel = document.querySelector('.bpx-player-info-panel');
+                if (panel) {
+                    clearInterval(waitForPanel);
+                    observer.observe(panel, {
+                        childList: true,
+                        subtree: true,
+                        attributes: false
                     });
                 }
-            });
-        });
+            }, 500);
 
-        // 监听整个body的变化，以捕获播放器区域的更新
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class', 'style', 'data-state']
-        });
+            // 限制等待时间
+            setTimeout(() => {
+                clearInterval(waitForPanel);
+            }, 10000); // 最多等待10秒
+        }
 
         return observer;
     }
