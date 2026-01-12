@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.9
+// @version      1.0.10
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -292,6 +292,9 @@
     // 初始获取一次当前位置
     setTimeout(() => fetchPreciseLocation(''), 2000); // 延迟2秒执行，确保页面加载完成
 
+    // 用于存储最近的CDN主机名
+    let lastCdnHostname = '';
+
     // 性能观察器，用于检测视频流资源
     const observer = new PerformanceObserver((list) => {
         list.getEntries().forEach(entry => {
@@ -304,7 +307,11 @@
                     const url = new URL(entry.name);
                     // 确保不是本地资源
                     if (url.hostname && url.hostname !== window.location.hostname) {
-                        fetchPreciseLocation(url.hostname);
+                        // 避免重复请求相同的主机名
+                        if (lastCdnHostname !== url.hostname) {
+                            lastCdnHostname = url.hostname;
+                            fetchPreciseLocation(url.hostname);
+                        }
                     }
                 } catch(e) {
                     if (CONFIG.DEBUG) console.error('Error processing resource entry:', e);
@@ -333,7 +340,8 @@
                 const dataNode = line.querySelector('span:last-child, .info-data, .content');
                 if (dataNode) {
                     // 检查是否已经有MB/s显示，如果有则跳过
-                    if (!dataNode.querySelector('.mbps-addon')) {
+                    const existingAddon = dataNode.querySelector('.mbps-addon');
+                    if (!existingAddon) {
                         const kbpsText = dataNode.innerText;
                         const kbpsMatch = kbpsText.match(/[\d.]+/);
 
@@ -349,6 +357,19 @@
                                 `;
                                 mbpsSpan.textContent = `(${(kbps/8000).toFixed(2)} MB/s)`;
                                 dataNode.appendChild(mbpsSpan);
+                            }
+                        }
+                    } else {
+                        // 如果已经有MB/s显示，检查是否需要更新数值
+                        const kbpsText = dataNode.innerText;
+                        const kbpsMatch = kbpsText.match(/[\d.]+/);
+                        if (kbpsMatch) {
+                            const kbps = parseFloat(kbpsMatch[0]);
+                            if (!isNaN(kbps)) {
+                                const expectedText = `(${(kbps/8000).toFixed(2)} MB/s)`;
+                                if (existingAddon.textContent !== expectedText) {
+                                    existingAddon.textContent = expectedText;
+                                }
                             }
                         }
                     }
