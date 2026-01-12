@@ -4,7 +4,7 @@
  * License: MIT
  */
 
-/* --- 字体声明 --- */
+/* --- 1. 字体声明 --- */
 @font-face {
     font-family: 'LXGW WenKai';
     src: url('https://fastly.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/LXGWWenKai-Light.woff2') format('woff2');
@@ -13,7 +13,7 @@
 
 @import url('https://fonts.googleapis.cnpmjs.org/css2?family=Noto+Serif+SC:wght@500;700&display=swap');
 
-/* --- 视频字幕优化 --- */
+/* --- 2. 视频字幕优化 --- */
 .emby-subtitle-text,
 div[style*="font-size: 1em; text-shadow:"],
 div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 0.08em 0.5em;"] {
@@ -34,7 +34,7 @@ div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 
     bottom: max(6%, 35px) !important;
 }
 
-/* --- 界面标题排版 --- */
+/* --- 3. 界面标题排版 --- */
 .cardText, .itemName, .pageTitle, h1.name, h2.name, h3.name {
     font-family: "LXGW WenKai", "Noto Serif SC", sans-serif !important;
     text-align: center !important;
@@ -48,10 +48,10 @@ div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 
     width: 100% !important;
 }
 
-/* --- 全局界面文字自适应 --- */
+/* --- 4. 全局界面文字自适应 --- */
 body, p, .cardText, .itemName, .pageTitle, .itemDetailName {
     font-family: "LXGW WenKai", "Noto Serif SC", "Microsoft YaHei", sans-serif !important;
-    font-size: calc(0.7rem + 0.4vw) !important;
+    font-size: calc(0.5rem + 0.4vw) !important;
 }
 
 .cardMediaInfoItem.textActionButton {
