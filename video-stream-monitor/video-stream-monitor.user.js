@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.8
+// @version      1.0.9
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -215,8 +215,8 @@
                 try {
                     const data = JSON.parse(res.responseText);
 
-                    if (data.status === 'success' || (!data.status || data.status === 'ok')) {
-                        const country = data.country_code || data.countryCode || data.country || "";
+                    if (data.status === 'success' || data.status === 'ok') {
+                        const country = data.country || data.countryCode || data.country_code || "";
                         const city = data.city || "";
 
                         // 构建位置字符串
@@ -265,7 +265,11 @@
 
                 // 如果是查询特定主机名失败，尝试获取本地IP作为备用
                 if (hostname) {
-                    setTimeout(() => fetchPreciseLocation(''), 1000);
+                    // 不再递归调用，而是直接设置fallback
+                    locationInfo = `[${lang.fallback}]`;
+                    if (infoSpan) {
+                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
+                    }
                 } else {
                     locationInfo = `[${lang.fallback}]`;
                     if (infoSpan) {
@@ -276,13 +280,10 @@
             ontimeout: () => {
                 console.warn(`Timeout when fetching location for ${hostname}`);
 
-                if (hostname) {
-                    setTimeout(() => fetchPreciseLocation(''), 1000);
-                } else {
-                    locationInfo = `[${lang.fallback}]`;
-                    if (infoSpan) {
-                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
-                    }
+                // 超时时也设置fallback
+                locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
+                if (infoSpan) {
+                    infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
                 }
             }
         });
@@ -294,10 +295,17 @@
     // 性能观察器，用于检测视频流资源
     const observer = new PerformanceObserver((list) => {
         list.getEntries().forEach(entry => {
-            if (entry.name.includes('googlevideo.com') || entry.name.includes('bilivideo.com')) {
+            // 检查是否为视频流请求
+            if (entry.name.includes('googlevideo.com') ||
+                entry.name.includes('bilivideo.com') ||
+                entry.name.includes('akamaized.net') ||
+                entry.name.includes('hwcdn.net')) {
                 try {
                     const url = new URL(entry.name);
-                    fetchPreciseLocation(url.hostname);
+                    // 确保不是本地资源
+                    if (url.hostname && url.hostname !== window.location.hostname) {
+                        fetchPreciseLocation(url.hostname);
+                    }
                 } catch(e) {
                     if (CONFIG.DEBUG) console.error('Error processing resource entry:', e);
                 }
@@ -323,22 +331,25 @@
             const text = line.innerText;
             if ((text.includes('Speed') || text.includes('速度')) && text.includes('Kbps')) {
                 const dataNode = line.querySelector('span:last-child, .info-data, .content');
-                if (dataNode && !dataNode.querySelector('.mbps-addon')) {
-                    const kbpsText = dataNode.innerText;
-                    const kbpsMatch = kbpsText.match(/[\d.]+/);
+                if (dataNode) {
+                    // 检查是否已经有MB/s显示，如果有则跳过
+                    if (!dataNode.querySelector('.mbps-addon')) {
+                        const kbpsText = dataNode.innerText;
+                        const kbpsMatch = kbpsText.match(/[\d.]+/);
 
-                    if (kbpsMatch) {
-                        const kbps = parseFloat(kbpsMatch[0]);
-                        if (!isNaN(kbps)) {
-                            const mbpsSpan = document.createElement('span');
-                            mbpsSpan.className = 'mbps-addon';
-                            mbpsSpan.style.cssText = `
-                                color: #00ff00;
-                                font-weight: bold;
-                                margin-left: 5px;
-                            `;
-                            mbpsSpan.textContent = `(${(kbps/8000).toFixed(2)} MB/s)`;
-                            dataNode.appendChild(mbpsSpan);
+                        if (kbpsMatch) {
+                            const kbps = parseFloat(kbpsMatch[0]);
+                            if (!isNaN(kbps)) {
+                                const mbpsSpan = document.createElement('span');
+                                mbpsSpan.className = 'mbps-addon';
+                                mbpsSpan.style.cssText = `
+                                    color: #00ff00;
+                                    font-weight: bold;
+                                    margin-left: 5px;
+                                `;
+                                mbpsSpan.textContent = `(${(kbps/8000).toFixed(2)} MB/s)`;
+                                dataNode.appendChild(mbpsSpan);
+                            }
                         }
                     }
                 }
