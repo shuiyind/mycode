@@ -7,7 +7,7 @@
 ### 🟢 油猴脚本 (Userscripts)
 | 项目名称 | 路径 | 功能描述 | 安装链接 (Raw) |
 | :--- | :--- | :--- | :--- |
-| **Video Stream Monitor** | `/video-stream-monitor/` | **[V1.0.5]** YouTube/B站视频流监控：IP定位、平滑网速及面板换算 | [立即安装](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js) |
+| **Video Stream Monitor** | `/video-stream-monitor/` | **[V1.0.15]** YouTube/B站视频流监控：IP定位、平滑网速及面板换算 | [立即安装](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js) |
 | **M-Team 繁简转换** | `/m-team-t2s/` | 基于 OpenCC-JS，将 M-Team 站内繁体转为简体 | [立即安装](https://raw.githubusercontent.com/shuiyind/mycode/main/m-team-t2s/m-team-t2s.user.js) |
 
 ### 🔵 实用工具 (Tools & Snippets)
@@ -26,6 +26,7 @@
 本项目采用 [MIT License](LICENSE) 许可协议。
 
 ## 📝 最近更新
+- **2026-01-12**: 更新 **Video Stream Monitor (v1.0.15)**，优化B站播放器统计面板监听机制，解决MB/s标签闪烁问题。
 - **2026-01-08**: 更新 **Video Stream Monitor (v1.0.5)**，修复 HTTPS 接口兼容性及 B 站新版 UI 适配。
 - **2025-12-21**: 完成 **M-Team 繁简转换脚本 (v1.5)** 的隔离部署。
 
