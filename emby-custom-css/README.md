@@ -39,6 +39,11 @@ emby-custom-css/
 - Emby的CSS类名通常以 `.emby-` 或 `.layout-` 开头
 - 可以通过自定义CSS修改颜色、布局、字体等样式
 
+## 💡 使用说明
+
+本项目提供预设的CSS样式，可以直接使用 `main-custom.css` 文件中的完整样式代码。
+将其中的CSS代码复制到Emby的自定义CSS设置中即可应用。
+
 ## ⚠️ 注意事项
 
 - 自定义CSS在Emby更新后可能需要调整

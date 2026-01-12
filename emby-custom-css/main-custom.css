@@ -1,0 +1,76 @@
+/*
+ * Emby 优化版 (霞鹜文楷优先 + 国内加速 + 全屏响应式)
+ */
+
+/* --- 1. 字体声明 --- */
+@font-face {
+    font-family: 'LXGW WenKai';
+    src: url('https://fastly.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/LXGWWenKai-Light.woff2') format('woff2');
+    font-display: swap;
+}
+
+@import url('https://fonts.googleapis.cnpmjs.org/css2?family=Noto+Serif+SC:wght@500;700&display=swap');
+
+/* --- 2. 视频字幕优化 --- */
+.emby-subtitle-text,
+div[style*="font-size: 1em; text-shadow:"],
+div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 0.08em 0.5em;"] {
+    /* 强制优先文楷 */
+    font-family: "LXGW WenKai", "Noto Serif SC", "Microsoft YaHei", sans-serif !important;
+
+    font-size: clamp(24px, 3.5vw, 42px) !important;
+}
+
+@media (max-width: 768px) {
+    .emby-subtitle-text,
+    div[style*="font-size: 1em; text-shadow:"],
+    div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 0.08em 0.5em;"] {
+        font-size: clamp(20px, 4vw, 32px) !important;
+    }
+}
+
+.emby-subtitle-text,
+div[style*="font-size: 1em; text-shadow:"],
+div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 0.08em 0.5em;"] {
+    color: #FFFFFF !important;
+    font-weight: 500 !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.02em !important;
+
+    /* 黑色描边补强 */
+    text-shadow:
+        calc(-0.05 * min(1vw, 1vh)) calc(-0.05 * min(1vw, 1vh)) 0 #000 !important,
+        calc(0.05 * min(1vw, 1vh)) calc(-0.05 * min(1vw, 1vh)) 0 #000 !important,
+        calc(-0.05 * min(1vw, 1vh)) calc(0.05 * min(1vw, 1vh)) 0 #000 !important,
+        calc(0.05 * min(1vw, 1vh)) calc(0.05 * min(1vw, 1vh)) 0 #000 !important,
+        0 2px 4px rgba(0, 0, 0, 0.5) !important;
+
+    bottom: max(6%, 35px) !important;
+}
+
+/* --- 3. 界面标题排版 (修复居中与多行显示) --- */
+.cardText, .itemName, .pageTitle, h1.name, h2.name, h3.name {
+    font-family: "LXGW WenKai", "Noto Serif SC", sans-serif !important;
+    text-align: center !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    word-wrap: break-word !important;
+    width: 100% !important;
+}
+
+/* --- 4. 全局字体替换 --- */
+body, p, .cardText, .itemName, .pageTitle, .itemDetailName {
+    font-family: "LXGW WenKai", "Noto Serif SC", "Microsoft YaHei", sans-serif !important;
+}
+
+/* 按钮与卡片下方文字居中 */
+.cardMediaInfoItem.textActionButton {
+    text-align: center !important;
+    width: 100% !important;
+}
