@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.6
+// @version      1.0.7
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -169,101 +169,102 @@
     }
 
     // 获取精确位置信息
-    async function fetchPreciseLocation(hostname = '') {
-        try {
-            // 如果是主机名且已在缓存中，直接返回
-            if (hostname) {
-                const cachedLocation = getLocationFromCache(hostname);
-                if (cachedLocation) {
-                    locationInfo = cachedLocation;
-                    return;
-                }
+    function fetchPreciseLocation(hostname = '') {
+        // 如果是主机名且已在缓存中，直接返回
+        if (hostname) {
+            const cachedLocation = getLocationFromCache(hostname);
+            if (cachedLocation) {
+                locationInfo = cachedLocation;
+                return Promise.resolve(cachedLocation);
             }
-
-            // 使用不同的API服务，增加可靠性
-            let apiUrl = '';
-            if (hostname) {
-                // 优先使用 ip-api.com
-                apiUrl = `http://ip-api.com/json/${hostname}?lang=${isCN || isTW ? 'zh-CN' : 'en'}`;
-            } else {
-                // 对于本地IP，使用 ipapi.co
-                apiUrl = `https://ipapi.co/json/`;
-            }
-
-            // 发起网络请求
-            return new Promise((resolve, reject) => {
-                GM_xmlhttpRequest({
-                    method: "GET",
-                    url: apiUrl,
-                    timeout: CONFIG.TIMEOUT,
-                    onload: (res) => {
-                        try {
-                            const data = JSON.parse(res.responseText);
-
-                            if (data.status === 'success' || (!data.status || data.status === 'ok')) {
-                                const country = data.country_code || data.countryCode || data.country || "";
-                                const city = data.city || "";
-
-                                // 构建位置字符串
-                                let result = '';
-                                if (country && city) {
-                                    result = `[${country} ${city}]`;
-                                } else if (country) {
-                                    result = `[${country}]`;
-                                } else if (city) {
-                                    result = `[${city}]`;
-                                } else {
-                                    result = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                                }
-
-                                // 清理格式
-                                result = result.replace(/\s\]/, ']').trim();
-
-                                if (result !== '[ ]' && result !== '[]') {
-                                    locationInfo = result;
-                                    if (hostname) {
-                                        setCache(hostname, result);
-                                    }
-                                } else {
-                                    locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                                }
-
-                                resolve(result);
-                            } else {
-                                throw new Error(`API Error: ${data.message || 'Unknown error'}`);
-                            }
-                        } catch(e) {
-                            console.error('Location fetch error:', e);
-                            reject(e);
-                        }
-                    },
-                    onerror: (error) => {
-                        console.error('Network error when fetching location:', error);
-
-                        // 如果是查询特定主机名失败，尝试获取本地IP作为备用
-                        if (hostname) {
-                            fetchPreciseLocation('').then(resolve).catch(reject);
-                        } else {
-                            locationInfo = `[${lang.fallback}]`;
-                            reject(error);
-                        }
-                    },
-                    ontimeout: () => {
-                        console.warn(`Timeout when fetching location for ${hostname}`);
-
-                        if (hostname) {
-                            fetchPreciseLocation('').then(resolve).catch(reject);
-                        } else {
-                            locationInfo = `[${lang.fallback}]`;
-                            reject(new Error('Timeout'));
-                        }
-                    }
-                });
-            });
-        } catch(e) {
-            console.error('Unexpected error in fetchPreciseLocation:', e);
-            locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
         }
+
+        // 使用不同的API服务，增加可靠性
+        let apiUrl = '';
+        if (hostname) {
+            // 优先使用 ip-api.com (使用https以避免混合内容问题)
+            apiUrl = `https://ip-api.com/json/${hostname}?lang=${isCN || isTW ? 'zh-CN' : 'en'}`;
+        } else {
+            // 对于本地IP，使用 ipapi.co
+            apiUrl = `https://ipapi.co/json/`;
+        }
+
+        // 发起网络请求
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: apiUrl,
+                timeout: CONFIG.TIMEOUT,
+                onload: (res) => {
+                    try {
+                        const data = JSON.parse(res.responseText);
+
+                        if (data.status === 'success' || (!data.status || data.status === 'ok')) {
+                            const country = data.country_code || data.countryCode || data.country || "";
+                            const city = data.city || "";
+
+                            // 构建位置字符串
+                            let result = '';
+                            if (country && city) {
+                                result = `[${country} ${city}]`;
+                            } else if (country) {
+                                result = `[${country}]`;
+                            } else if (city) {
+                                result = `[${city}]`;
+                            } else {
+                                result = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
+                            }
+
+                            // 清理格式
+                            result = result.replace(/\s\]/, ']').trim();
+
+                            if (result !== '[ ]' && result !== '[]') {
+                                locationInfo = result;
+                                if (hostname) {
+                                    setCache(hostname, result);
+                                }
+                            } else {
+                                locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
+                            }
+
+                            resolve(result);
+                        } else {
+                            throw new Error(`API Error: ${data.message || 'Unknown error'}`);
+                        }
+                    } catch(e) {
+                        console.error('Location fetch error:', e);
+                        reject(e);
+                    }
+                },
+                onerror: (error) => {
+                    console.error('Network error when fetching location:', error);
+
+                    // 如果是查询特定主机名失败，尝试获取本地IP作为备用
+                    if (hostname) {
+                        fetchPreciseLocation('').then(resolve).catch(reject);
+                    } else {
+                        locationInfo = `[${lang.fallback}]`;
+                        reject(error);
+                    }
+                },
+                ontimeout: () => {
+                    console.warn(`Timeout when fetching location for ${hostname}`);
+
+                    if (hostname) {
+                        fetchPreciseLocation('').then(resolve).catch(reject);
+                    } else {
+                        locationInfo = `[${lang.fallback}]`;
+                        reject(new Error('Timeout'));
+                    }
+                }
+            });
+        }).catch(error => {
+            // 错误处理，确保即使出错也会更新UI
+            if (hostname) {
+                locationInfo = `[${lang.fallback}]`;
+            }
+            console.error('Error in fetchPreciseLocation:', error);
+        });
     }
 
     // 初始获取一次当前位置
@@ -322,7 +323,7 @@
                 }
             }
         });
-    }, 300); // 防抖300ms
+    }, 1000); // 增加防抖时间到1秒，减少闪烁
 
     // 主更新循环
     setInterval(() => {
