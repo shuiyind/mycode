@@ -1,58 +1,28 @@
-# Emby Custom CSS Collection
+# 🎬 Emby Custom CSS
 
-这里收集了各种Emby媒体服务器的自定义CSS样式，用于个性化Emby界面。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Emby Version](https://img.shields.io/badge/Emby-4.7%2B-green.svg)
 
-## 📂 项目结构
-
-```
-emby-custom-css/
-├── themes/           # 主题CSS文件
-│   ├── dark-theme.css
-│   └── light-theme.css
-├── components/       # 组件定制CSS
-│   ├── player.css
-│   └── navigation.css
-├── customizations/   # 个性化定制
-│   ├── logo-change.css
-│   └── layout-mods.css
-└── README.md
-```
-
-## 🎨 可用主题
-
-| 主题名称 | 描述 | 安装方式 |
-| :--- | :--- | :--- |
-| Dark Theme | 深色主题，适合夜间使用 | 复制CSS代码到Emby自定义CSS设置 |
-| Light Theme | 浅色主题，明亮清晰 | 复制CSS代码到Emby自定义CSS设置 |
-
-## 🛠 使用方法
-
-1. 登录Emby管理员账户
-2. 进入 控制台 → 界面 → 自定义CSS
-3. 将所需的CSS代码复制到文本框中
-4. 保存设置
-5. 刷新浏览器页面查看效果
-
-## 📝 自定义CSS技巧
-
-- 使用浏览器开发者工具（F12）来查找特定元素的CSS类名
-- Emby的CSS类名通常以 `.emby-` 或 `.layout-` 开头
-- 可以通过自定义CSS修改颜色、布局、字体等样式
-
-## 💡 使用说明
-
-本项目提供预设的CSS样式，可以直接使用 `main-custom.css` 文件中的完整样式代码。
-将其中的CSS代码复制到Emby的自定义CSS设置中即可应用。
-
-## ⚠️ 注意事项
-
-- 自定义CSS在Emby更新后可能需要调整
-- 某些CSS修改可能在不同设备上显示效果不同
-- 建议备份原始CSS代码以便恢复
-
-## 🤝 贡献
-
-欢迎提交Issue或Pull Request来分享你的Emby自定义CSS样式！
+提升 Emby 媒体服务器视觉体验的自定义 CSS 样式。
 
 ---
-*持续优化Emby体验，打造个性化媒体中心。*
+
+## ✨ 主要特性
+
+* **字体美化**：全局引入 **霞鹜文楷 (LXGW WenKai)**，提供更优质的中文阅读体验。
+* **沉浸式 UI**：隐藏多余的页脚（Footer）信息及版本标识。
+* **现代圆角**：对海报、按钮及卡片进行了圆角处理，视觉更柔和。
+* **界面精简**：去除了部分不必要的标题和装饰，使界面更清爽。
+
+## 🚀 如何使用
+
+### 方法 A：直接复制（推荐）
+1.  打开 `emby-custom-css.css` 文件。
+2.  全选并复制所有代码。
+3.  登录 Emby 服务端：`设置` -> `管理` -> `控制台` -> `设置` -> `界面`。
+4.  在 **自定义 CSS** 文本框中粘贴代码，保存即可。
+
+### 方法 B：外链导入（需公网/CDN）
+将以下代码填入 Emby 的自定义 CSS 框中：
+```css
+@import url("[https://cdn.jsdelivr.net/gh/shuiyind/mycode@main/emby-custom-css/emby-custom-css.css](https://cdn.jsdelivr.net/gh/shuiyind/mycode@main/emby-custom-css/emby-custom-css.css)");
