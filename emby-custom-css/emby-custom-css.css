@@ -9,15 +9,12 @@
     font-display: swap;
 }
 
-@import url('https://fonts.googleapis.cnpmjs.org/css2?family=Noto+Serif+SC:wght@500;700&display=swap');
-
 /* --- 2. 视频字幕优化 --- */
 .emby-subtitle-text,
 div[style*="font-size: 1em; text-shadow:"],
 div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 0.08em 0.5em;"] {
-    /* 强制优先文楷 */
-    font-family: "LXGW WenKai", "Noto Serif SC", "Microsoft YaHei", sans-serif !important;
-
+    /* 合并字体逻辑，移除失效链接 */
+    font-family: "LXGW WenKai", "Microsoft YaHei", serif !important;
     font-size: clamp(24px, 3.5vw, 42px) !important;
 }
 
@@ -50,9 +47,9 @@ div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 
     bottom: max(6%, 35px) !important;
 }
 
-/* --- 3. 界面标题排版 (修复居中与多行显示) --- */
+/* --- 3. 界面标题排版 --- */
 .cardText, .itemName, .pageTitle, h1.name, h2.name, h3.name {
-    font-family: "LXGW WenKai", "Noto Serif SC", sans-serif !important;
+    font-family: "LXGW WenKai", "Microsoft YaHei", serif !important;
     text-align: center !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 3 !important;
@@ -66,7 +63,7 @@ div[style*="text-align: center; white-space: pre-line;"] > div[style*="padding: 
 
 /* --- 4. 全局字体替换 --- */
 body, p, .cardText, .itemName, .pageTitle, .itemDetailName {
-    font-family: "LXGW WenKai", "Noto Serif SC", "Microsoft YaHei", sans-serif !important;
+    font-family: "LXGW WenKai", "Microsoft YaHei", serif !important;
 }
 
 /* 按钮与卡片下方文字居中 */
