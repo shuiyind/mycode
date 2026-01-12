@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.11
+// @version      1.0.12
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -94,6 +94,9 @@
     });
     observer.observe({ entryTypes: ['resource'] });
 
+    // 用于存储已添加MB/s标签的元素，避免重复添加
+    const processedElements = new Set();
+
     function enhanceNativeStats() {
         const host = window.location.host;
         const selectors = host.includes('youtube') ?
@@ -104,14 +107,30 @@
             const text = line.innerText;
             if ((text.includes('Speed') || text.includes('速度')) && text.includes('Kbps')) {
                 const dataNode = line.querySelector('span:last-child, .info-data, .content');
-                if (dataNode && !dataNode.querySelector('.mbps-addon')) {
-                    const kbps = parseFloat(dataNode.innerText.replace(/[^\d.]/g, ''));
-                    if (!isNaN(kbps)) {
-                        const mbpsSpan = document.createElement('span');
-                        mbpsSpan.className = 'mbps-addon';
-                        mbpsSpan.style = "color:#00ff00; font-weight:bold; margin-left:5px;";
-                        mbpsSpan.innerText = `(${(kbps/8000).toFixed(2)} MB/s)`;
-                        dataNode.appendChild(mbpsSpan);
+                if (dataNode) {
+                    // 检查是否已经有MB/s显示
+                    const existingAddon = dataNode.querySelector('.mbps-addon');
+                    if (!existingAddon) {
+                        const kbps = parseFloat(dataNode.innerText.replace(/[^\d.]/g, ''));
+                        if (!isNaN(kbps)) {
+                            const mbpsSpan = document.createElement('span');
+                            mbpsSpan.className = 'mbps-addon';
+                            mbpsSpan.style = "color:#00ff00; font-weight:bold; margin-left:5px;";
+                            mbpsSpan.innerText = `(${(kbps/8000).toFixed(2)} MB/s)`;
+                            dataNode.appendChild(mbpsSpan);
+
+                            // 记录已处理的元素
+                            processedElements.add(dataNode);
+                        }
+                    } else {
+                        // 如果已经有MB/s显示，检查是否需要更新数值
+                        const kbps = parseFloat(dataNode.innerText.replace(/[^\d.]/g, ''));
+                        if (!isNaN(kbps)) {
+                            const expectedText = `(${(kbps/8000).toFixed(2)} MB/s)`;
+                            if (existingAddon.innerText !== expectedText) {
+                                existingAddon.innerText = expectedText;
+                            }
+                        }
                     }
                 }
             }
