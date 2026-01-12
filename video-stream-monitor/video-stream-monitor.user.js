@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.0.10
+// @version      1.0.11
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -20,412 +20,126 @@
 (function() {
     'use strict';
 
-    // 配置选项
-    const CONFIG = {
-        UPDATE_INTERVAL: 1000,
-        STATS_UPDATE_INTERVAL: 1000, // 增加间隔以减少闪烁
-        SPEED_WINDOW_SIZE: 5,
-        CACHE_DURATION: 300000, // 5分钟缓存
-        TIMEOUT: 5000, // 增加超时时间
-        DEBUG: false
-    };
-
-    // 多语言支持
-    const LANG = {
-        cn: {
-            fetching: "获取中",
-            fallback: "本地IP"
-        },
-        tw: {
-            fetching: "獲取中",
-            fallback: "本地IP"
-        },
-        en: {
-            fetching: "Fetching...",
-            fallback: "Local IP"
-        }
-    };
-
     const userLang = navigator.language || 'en';
     const isCN = userLang.includes('zh-CN');
     const isTW = userLang.includes('zh-TW') || userLang.includes('zh-HK');
-    const lang = isTW ? LANG.tw : (isCN ? LANG.cn : LANG.en);
 
-    // 状态管理
-    let locationInfo = lang.fetching;
+    let locationInfo = isTW ? "獲取中" : (isCN ? "获取中" : "Fetching...");
     let lastBuffered = 0;
     let lastTime = Date.now();
     const speedWindow = [];
     let smoothSpeedText = "0.00 MB/s";
+    const ipCache = {};
 
-    // IP缓存，包含过期时间
-    const ipCache = new Map();
-
-    // UI元素
-    let infoSpan = null;
-    let uiInjected = false;
-
-    // 创建UI元素
-    function createUIElement() {
-        if (infoSpan) return infoSpan;
-
-        infoSpan = document.createElement('span');
-        infoSpan.id = 'native-monitor-info';
-        infoSpan.style.cssText = `
-            margin: 0 15px;
-            white-space: nowrap;
-            font-size: 13px;
-            color: #00ff00;
-            display: inline-block;
-            vertical-align: middle;
-            font-weight: bold;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
-            pointer-events: none;
-            z-index: 100;
-            line-height: 1.2;
-        `;
-        return infoSpan;
-    }
-
-    // 防抖函数
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    // 节流函数 - 确保函数至少等待指定时间才执行下一次
-    function throttle(func, wait) {
-        let waiting = false;
-        return function executedFunction(...args) {
-            if (!waiting) {
-                func.apply(this, args);
-                waiting = true;
-                setTimeout(() => {
-                    waiting = false;
-                }, wait);
-            }
-        };
-    }
-
-    // 注入UI元素
-    const throttledInjectUI = throttle(function() {
-        if (document.getElementById('native-monitor-info')) return;
-
-        const host = window.location.host;
-        let target = null;
-
-        if (host.includes('youtube')) {
-            target = document.querySelector('.ytp-right-controls');
-        } else {
-            // 尝试多个可能的选择器
-            const selectors = [
-                '.bpx-player-control-bottom-right',
-                '.squirtle-controller-right',
-                '.bilibili-player-video-control-bottom-right'
-            ];
-
-            for (const selector of selectors) {
-                target = document.querySelector(selector);
-                if (target) break;
-            }
-        }
-
-        if (target) {
-            const element = createUIElement();
-            target.prepend(element);
-        }
-    }, 1000); // 每秒最多注入一次
+    const infoSpan = document.createElement('span');
+    infoSpan.id = 'native-monitor-info';
+    infoSpan.style = "margin: 0 15px; white-space: nowrap; font-size: 13px; color: #00ff00; display: inline-block; vertical-align: middle; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.8); pointer-events: none; z-index: 100;";
 
     function injectUI() {
-        throttledInjectUI();
-    }
+        if (document.getElementById('native-monitor-info')) return;
+        const host = window.location.host;
+        const target = host.includes('youtube') ?
+            document.querySelector('.ytp-right-controls') :
+            (document.querySelector('.bpx-player-control-bottom-right') || document.querySelector('.squirtle-controller-right') || document.querySelector('.bilibili-player-video-control-bottom-right'));
 
-    // 检查缓存是否有效
-    function isCacheValid(hostname) {
-        if (!ipCache.has(hostname)) return false;
-
-        const cached = ipCache.get(hostname);
-        return (Date.now() - cached.timestamp) < CONFIG.CACHE_DURATION;
-    }
-
-    // 从缓存获取位置信息
-    function getLocationFromCache(hostname) {
-        if (isCacheValid(hostname)) {
-            return ipCache.get(hostname).location;
-        }
-        return null;
-    }
-
-    // 设置缓存
-    function setCache(hostname, location) {
-        ipCache.set(hostname, {
-            location: location,
-            timestamp: Date.now()
-        });
-    }
-
-    // 清理过期缓存
-    function cleanupCache() {
-        const now = Date.now();
-        for (const [hostname, cached] of ipCache.entries()) {
-            if ((now - cached.timestamp) >= CONFIG.CACHE_DURATION) {
-                ipCache.delete(hostname);
-            }
+        if (target) {
+            if (host.includes('youtube')) infoSpan.style.lineHeight = "48px";
+            target.prepend(infoSpan);
         }
     }
 
-    // 获取精确位置信息
+    // --- 增强型 IP 获取逻辑 ---
     function fetchPreciseLocation(hostname = '') {
-        // 如果是主机名且已在缓存中，直接返回
-        if (hostname) {
-            const cachedLocation = getLocationFromCache(hostname);
-            if (cachedLocation) {
-                locationInfo = cachedLocation;
-                // 确保UI更新
-                if (infoSpan) {
-                    infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
-                }
-                return;
-            }
-        }
+        if (hostname && ipCache[hostname]) { locationInfo = ipCache[hostname]; return; }
 
-        // 使用不同的API服务，增加可靠性
-        let apiUrl = '';
-        if (hostname) {
-            // 优先使用 ip-api.com (使用https以避免混合内容问题)
-            apiUrl = `https://ip-api.com/json/${hostname}?lang=${isCN || isTW ? 'zh-CN' : 'en'}`;
-        } else {
-            // 对于本地IP，使用 ipapi.co
-            apiUrl = `https://ipapi.co/json/`;
-        }
+        // 使用 ip-api.com 的 JSON 接口 (如果 HTTPS 报错，脚本会自动尝试兼容)
+        const apiUrl = hostname ? `http://ip-api.com/json/${hostname}?lang=zh-CN` : `https://ipapi.co/json/`;
 
-        // 发起网络请求
         GM_xmlhttpRequest({
             method: "GET",
             url: apiUrl,
-            timeout: CONFIG.TIMEOUT,
+            timeout: 3000,
             onload: (res) => {
                 try {
                     const data = JSON.parse(res.responseText);
+                    const country = data.country_code || data.countryCode || "";
+                    const city = data.city || "";
+                    const result = `[${country} ${city}]`.replace(/\s\]/, ']').trim();
 
-                    if (data.status === 'success' || data.status === 'ok') {
-                        const country = data.country || data.countryCode || data.country_code || "";
-                        const city = data.city || "";
-
-                        // 构建位置字符串
-                        let result = '';
-                        if (country && city) {
-                            result = `[${country} ${city}]`;
-                        } else if (country) {
-                            result = `[${country}]`;
-                        } else if (city) {
-                            result = `[${city}]`;
-                        } else {
-                            result = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                        }
-
-                        // 清理格式
-                        result = result.replace(/\s\]/, ']').trim();
-
-                        if (result !== '[ ]' && result !== '[]') {
-                            locationInfo = result;
-                            if (hostname) {
-                                setCache(hostname, result);
-                            }
-                        } else {
-                            locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                        }
-                    } else {
-                        // API返回错误，使用fallback
-                        locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                    }
-
-                    // 确保UI更新
-                    if (infoSpan) {
-                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
+                    if (country) {
+                        locationInfo = result;
+                        if (hostname) ipCache[hostname] = result;
                     }
                 } catch(e) {
-                    console.error('Location fetch error:', e);
-                    // 出错时也更新UI
-                    locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                    if (infoSpan) {
-                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
-                    }
+                    // 如果视频节点查询失败，尝试获取本地出口 IP 作为兜底
+                    if (hostname) fetchPreciseLocation('');
                 }
             },
-            onerror: (error) => {
-                console.error('Network error when fetching location:', error);
-
-                // 如果是查询特定主机名失败，尝试获取本地IP作为备用
-                if (hostname) {
-                    // 不再递归调用，而是直接设置fallback
-                    locationInfo = `[${lang.fallback}]`;
-                    if (infoSpan) {
-                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
-                    }
-                } else {
-                    locationInfo = `[${lang.fallback}]`;
-                    if (infoSpan) {
-                        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
-                    }
-                }
-            },
-            ontimeout: () => {
-                console.warn(`Timeout when fetching location for ${hostname}`);
-
-                // 超时时也设置fallback
-                locationInfo = hostname ? `[${lang.fallback}]` : `[${lang.fallback}]`;
-                if (infoSpan) {
-                    infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
-                }
-            }
+            onerror: () => { if (hostname) fetchPreciseLocation(''); }
         });
     }
 
     // 初始获取一次当前位置
-    setTimeout(() => fetchPreciseLocation(''), 2000); // 延迟2秒执行，确保页面加载完成
+    fetchPreciseLocation('');
 
-    // 用于存储最近的CDN主机名
-    let lastCdnHostname = '';
-
-    // 性能观察器，用于检测视频流资源
-    const observer = new PerformanceObserver((list) => {
+    const observer = new PerformanceObserver(list => {
         list.getEntries().forEach(entry => {
-            // 检查是否为视频流请求
-            if (entry.name.includes('googlevideo.com') ||
-                entry.name.includes('bilivideo.com') ||
-                entry.name.includes('akamaized.net') ||
-                entry.name.includes('hwcdn.net')) {
+            if (entry.name.includes('googlevideo.com') || entry.name.includes('bilivideo.com')) {
                 try {
                     const url = new URL(entry.name);
-                    // 确保不是本地资源
-                    if (url.hostname && url.hostname !== window.location.hostname) {
-                        // 避免重复请求相同的主机名
-                        if (lastCdnHostname !== url.hostname) {
-                            lastCdnHostname = url.hostname;
-                            fetchPreciseLocation(url.hostname);
-                        }
-                    }
-                } catch(e) {
-                    if (CONFIG.DEBUG) console.error('Error processing resource entry:', e);
-                }
+                    fetchPreciseLocation(url.hostname);
+                } catch(e) {}
             }
         });
     });
+    observer.observe({ entryTypes: ['resource'] });
 
-    try {
-        observer.observe({ entryTypes: ['resource'] });
-    } catch(e) {
-        if (CONFIG.DEBUG) console.error('PerformanceObserver setup failed:', e);
-    }
-
-    // 增强原生统计面板 - 使用节流而不是防抖，确保至少执行一次
     function enhanceNativeStats() {
         const host = window.location.host;
         const selectors = host.includes('youtube') ?
             '.ytp-sfn-content tr, .ytp-sfn-content > div' :
             '.bpx-player-info-panel .info-line, .bilibili-player-video-info-panel-line';
 
-        const elements = document.querySelectorAll(selectors);
-        elements.forEach(line => {
+        document.querySelectorAll(selectors).forEach(line => {
             const text = line.innerText;
             if ((text.includes('Speed') || text.includes('速度')) && text.includes('Kbps')) {
                 const dataNode = line.querySelector('span:last-child, .info-data, .content');
-                if (dataNode) {
-                    // 检查是否已经有MB/s显示，如果有则跳过
-                    const existingAddon = dataNode.querySelector('.mbps-addon');
-                    if (!existingAddon) {
-                        const kbpsText = dataNode.innerText;
-                        const kbpsMatch = kbpsText.match(/[\d.]+/);
-
-                        if (kbpsMatch) {
-                            const kbps = parseFloat(kbpsMatch[0]);
-                            if (!isNaN(kbps)) {
-                                const mbpsSpan = document.createElement('span');
-                                mbpsSpan.className = 'mbps-addon';
-                                mbpsSpan.style.cssText = `
-                                    color: #00ff00;
-                                    font-weight: bold;
-                                    margin-left: 5px;
-                                `;
-                                mbpsSpan.textContent = `(${(kbps/8000).toFixed(2)} MB/s)`;
-                                dataNode.appendChild(mbpsSpan);
-                            }
-                        }
-                    } else {
-                        // 如果已经有MB/s显示，检查是否需要更新数值
-                        const kbpsText = dataNode.innerText;
-                        const kbpsMatch = kbpsText.match(/[\d.]+/);
-                        if (kbpsMatch) {
-                            const kbps = parseFloat(kbpsMatch[0]);
-                            if (!isNaN(kbps)) {
-                                const expectedText = `(${(kbps/8000).toFixed(2)} MB/s)`;
-                                if (existingAddon.textContent !== expectedText) {
-                                    existingAddon.textContent = expectedText;
-                                }
-                            }
-                        }
+                if (dataNode && !dataNode.querySelector('.mbps-addon')) {
+                    const kbps = parseFloat(dataNode.innerText.replace(/[^\d.]/g, ''));
+                    if (!isNaN(kbps)) {
+                        const mbpsSpan = document.createElement('span');
+                        mbpsSpan.className = 'mbps-addon';
+                        mbpsSpan.style = "color:#00ff00; font-weight:bold; margin-left:5px;";
+                        mbpsSpan.innerText = `(${(kbps/8000).toFixed(2)} MB/s)`;
+                        dataNode.appendChild(mbpsSpan);
                     }
                 }
             }
         });
     }
 
-    // 主更新循环
     setInterval(() => {
         injectUI();
-
         const video = document.querySelector('video');
-        if (video && video.buffered && video.buffered.length > 0) {
+        if (video && video.buffered.length > 0) {
             const now = Date.now();
             const duration = (now - lastTime) / 1000;
             const currentEnd = video.buffered.end(video.buffered.length - 1);
             const growth = currentEnd - lastBuffered;
 
             if (duration > 0 && growth >= 0) {
-                // 使用更准确的计算方法
                 const speed = (growth * 0.45) / duration;
                 speedWindow.push(speed);
-
-                // 维护固定大小的窗口
-                if (speedWindow.length > CONFIG.SPEED_WINDOW_SIZE) {
-                    speedWindow.shift();
-                }
+                if (speedWindow.length > 5) speedWindow.shift();
             }
 
-            // 计算平均速度
-            const avgSpeed = speedWindow.reduce((sum, val) => sum + val, 0) / Math.max(speedWindow.length, 1);
+            const avgSpeed = speedWindow.reduce((a, b) => a + b, 0) / (speedWindow.length || 1);
             smoothSpeedText = avgSpeed.toFixed(2) + " MB/s";
-
             lastBuffered = currentEnd;
             lastTime = now;
         }
+        infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
+    }, 1000);
 
-        // 更新UI显示
-        if (infoSpan) {
-            infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
-        }
-    }, CONFIG.UPDATE_INTERVAL);
-
-    // 统计面板增强循环 - 使用节流包装
-    const throttledEnhanceStats = throttle(enhanceNativeStats, 2000); // 每2秒最多执行一次
-    setInterval(throttledEnhanceStats, CONFIG.STATS_UPDATE_INTERVAL);
-
-    // 定期清理缓存
-    setInterval(cleanupCache, CONFIG.CACHE_DURATION);
-
-    // 页面卸载时清理资源
-    window.addEventListener('beforeunload', () => {
-        if (observer) {
-            observer.disconnect();
-        }
-    });
-
+    setInterval(enhanceNativeStats, 500);
 })();
