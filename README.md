@@ -5,15 +5,15 @@
 ## 📂 项目分类
 
 ### 🟢 油猴脚本 (Userscripts)
-| 项目名称 | 路径 | 功能描述 | 安装链接 |
+| 项目名称 | 路径 | 功能描述 | 链接 |
 | :--- | :--- | :--- | :--- |
-| **Video Stream Monitor** | `/video-stream-monitor/` | **[V1.0.15]** YouTube/B站视频流监控：IP定位、平滑网速及面板换算 | [立即安装](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js) |
-| **M-Team 繁简转换** | `/m-team-t2s/` | 基于 OpenCC-JS，将 M-Team 站内繁体转为简体 | [立即安装](https://raw.githubusercontent.com/shuiyind/mycode/main/m-team-t2s/m-team-t2s.user.js) |
+| **Video Stream Monitor** | `/video-stream-monitor/` | **[V1.0.15]** YouTube/B站视频流监控：IP定位、平滑网速及面板换算 | [安装](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js) |
+| **M-Team 繁简转换** | `/m-team-t2s/` | 基于 OpenCC-JS，将 M-Team 站内繁体转为简体 | [安装](https://raw.githubusercontent.com/shuiyind/mycode/main/m-team-t2s/m-team-t2s.user.js) |
 
 ### 🔵 Emby自定义样式 (Emby Custom CSS)
-| 项目名称 | 路径 | 功能描述 | 项目链接 |
+| 项目名称 | 路径 | 功能描述 | 链接 |
 | :--- | :--- | :--- | :--- |
-| **Emby Custom CSS** | `/emby-custom-css/` | **[V1.0.0]** Emby媒体服务器界面自定义CSS样式，优化字体与界面 | [查看项目](https://github.com/shuiyind/mycode/tree/main/emby-custom-css) |
+| **Emby Custom CSS** | `/emby-custom-css/` | **[V1.0.0]** Emby媒体服务器界面自定义CSS样式，优化字体与界面 | [查看](https://github.com/shuiyind/mycode/tree/main/emby-custom-css) |
 
 ### 🔵 实用工具 (Tools & Snippets)
 * **待添加**：未来可放置 Python 脚本、Shell 工具等。
