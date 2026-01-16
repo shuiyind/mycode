@@ -21,11 +21,6 @@
 | :--- | :--- | :--- | :--- |
 | **Emby Custom CSS** | `/emby-css/` | 霞鹜文楷字体优化、界面 UI 精简定制 | [📂 查看](https://github.com/shuiyind/mycode/tree/main/emby-custom-css) |
 
-### 🟠 AstrBot 插件
-| 项目名称 | 路径 | 版本 | 功能描述 | 链接 |
-| :--- | :--- | :--- | :--- | :--- |
-| **热搜动漫查询** | `/astrbot_plugin_trending_anime/` | `v1.0.0` | 全网热搜与动漫按需查询工具：通过大模型Tool Calling能力获取实时热搜及动漫剧集信息，带缓存机制和访问限制 | [📂 查看](https://github.com/shuiyind/mycode/tree/main/astrbot_plugin_trending_anime) |
-
 ### ⚪ 其他资源
 * **实用工具**：Python 脚本、Shell 工具等 (Coming Soon...)
 * **配置文件**：Dotfiles、游戏配置等 (Coming Soon...)
@@ -40,7 +35,6 @@
 ---
 
 ## 📝 最近更新
-* **2026-01-16**: 新增 `AstrBot 热搜动漫查询插件` (v1.0.0)，支持热搜和动漫信息查询，带缓存和访问限制。
 * **2026-01-12**: 升级 `M-Team 繁简转换` (v1.6.0)，重构监听逻辑，消除转换延迟闪烁。
 * **2026-01-12**: 新增 `Emby Custom CSS` (v1.0.0)，优化中文字体显示。
 * **2026-01-12**: 升级 `Video Stream Monitor` (v1.0.15)，修复 B 站面板闪烁问题。
