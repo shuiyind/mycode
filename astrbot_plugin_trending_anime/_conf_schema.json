@@ -1,0 +1,14 @@
+{
+  "alapi_token": {
+    "description": "ALAPI Token",
+    "type": "string",
+    "hint": "用于访问 ALAPI 获取热搜数据，请前往 alapi.cn 申请",
+    "obvious_hint": true
+  },
+  "custom_anime_api": {
+    "description": "自定义动漫API",
+    "type": "string",
+    "hint": "用户私有的动漫API地址（留空则使用Bangumi公共API）",
+    "obvious_hint": false
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "trending_anime",
+  "version": "1.0.0",
+  "description": "全网热搜与动漫按需查询工具 - 通过大模型Tool Calling能力获取实时热搜及动漫剧集信息",
+  "author": "shuiyind",
+  "repo": "https://github.com/shuiyind/astrbot_plugin_trending_anime",
+  "display_name": "热搜动漫查询插件"
+}
