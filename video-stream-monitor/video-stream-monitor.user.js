@@ -235,5 +235,7 @@
         infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
     }, 1000);
 
-    setInterval(enhanceNativeStats, 500);
+    if (!window.location.host.includes('bilibili')) {
+        setInterval(enhanceNativeStats, 500);
+    }
 })();
