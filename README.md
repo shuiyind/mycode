@@ -13,7 +13,7 @@
 ### 🟢 油猴脚本 (Userscripts)
 | 项目名称 | 路径 | 版本 | 功能描述 | 快速入口 |
 | :--- | :--- | :--- | :--- | :--- |
-| **Video Stream Monitor** | `/video-stream/` | `v1.0.15` | YouTube/B站流监控：IP定位、网速平滑 | [🚀 安装](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js) |
+| **Video Stream Monitor** | `/video-stream/` | `v1.0.16` | YouTube/B站流监控：IP定位、网速平滑 | [🚀 安装](https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js) |
 | **M-Team 繁简转换** | `/m-team-t2s/` | `v1.6.0` | 高性能 OpenCC 转换：增量渲染，实现零延迟无感简繁转换 | [🚀 安装](https://raw.githubusercontent.com/shuiyind/mycode/main/m-team-t2s/m-team-t2s.user.js) |
 
 ### 🔵 媒体库定制 (Emby Custom)
@@ -35,6 +35,7 @@
 ---
 
 ## 📝 最近更新
+* **2026-01-17**: 升级 `Video Stream Monitor` (v1.0.16)，优化B站页面性能并更新文档。
 * **2026-01-12**: 升级 `M-Team 繁简转换` (v1.6.0)，重构监听逻辑，消除转换延迟闪烁。
 * **2026-01-12**: 新增 `Emby Custom CSS` (v1.0.0)，优化中文字体显示。
 * **2026-01-12**: 升级 `Video Stream Monitor` (v1.0.15)，修复 B 站面板闪烁问题。
