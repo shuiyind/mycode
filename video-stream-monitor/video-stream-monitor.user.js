@@ -304,12 +304,10 @@
         }
 
         // \u9632\u6296\uff1a\u53ea\u5728\u901f\u5ea6\u53d8\u5316\u8d85\u8fc7 10% \u65f6\u66f4\u65b0 UI
-        const currentSpeed = smoothSpeedText;
-        const now = Date.now();
-        if (currentSpeed !== lastSpeed.value && (now - lastSpeed.lastUpdate > 500)) {
-            infoSpan.textContent = locationInfo + ' | ' + smoothSpeedText;
-            lastSpeed.value = currentSpeed;
-            lastSpeed.lastUpdate = now;
+        const newText = locationInfo + ' | ' + smoothSpeedText;
+        if (newText !== lastSpeed.value) {
+            infoSpan.textContent = newText;
+            lastSpeed.value = newText;
         }
     }, 1000);
 
@@ -321,5 +319,3 @@
         GM_registerMenuCommand((isCN ? "\u26a1 \u5f3a\u5236\u5237\u65b0 B\u7ad9\u9762\u677f" : "\u26a1 Force Refresh Bilibili Panel"), () => { enhanceNativeStats(); });
     }
 })();
-
-
