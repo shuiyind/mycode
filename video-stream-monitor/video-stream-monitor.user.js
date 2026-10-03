@@ -128,9 +128,10 @@
                 try {
                     const apiUrl = 'http://ip-api.com/json/' + ip + '?lang=zh-CN';
                     const data = await fetchIPInfo(apiUrl);
-                    console.log('[VSM] IP location data:', data && data.country_code, data && data.city);
-                    if (data && data.country_code) {
-                        result = '[' + data.country_code + ' ' + (data.city || '') + ']'
+                    console.log('[VSM] IP location data:', cc, data && data.city);
+                    const cc = data.countryCode || data.country_code || '';
+                    if (data && cc) {
+                        result = '[' + cc + ' ' + (data.city || '') + ']'
                             .trim();
                         ipCache[hostname] = result;
                     }
@@ -185,7 +186,8 @@
         // Step 3: ip-api.com
         try {
             const data = await fetchIPInfo('http://ip-api.com/json/?lang=zh-CN', null);
-            if (data && data.country_code) {
+            const cc = data.countryCode || data.country_code || '';
+                    if (data && cc) {
                 const city = data.city || '';
                 locationInfo = '[' + data.country_code + ' ' + city + ']';
                 ipCache.__global = locationInfo;
@@ -196,7 +198,8 @@
         // Step 4: ipapi.co\uff08\u6700\u540e\u519c\u5e95\uff09
         try {
             const data = await fetchIPInfo('https://ipapi.co/json/', null);
-            if (data && data.country_code) {
+            const cc = data.countryCode || data.country_code || '';
+                    if (data && cc) {
                 const city = data.city || '';
                 locationInfo = '[' + data.country_code + ' ' + city + ']';
                 ipCache.__global = locationInfo;
@@ -375,4 +378,6 @@
         GM_registerMenuCommand((isCN ? "\u26a1 \u5f3a\u5236\u5237\u65b0 B\u7ad9\u9762\u677f" : "\u26a1 Force Refresh Bilibili Panel"), () => { enhanceNativeStats(); });
     }
 })();
+
+
 
