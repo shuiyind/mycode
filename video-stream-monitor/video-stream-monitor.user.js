@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.2.3
+// @version      1.2.4
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -95,6 +95,7 @@
                 headers: { 'Accept': 'application/dns-json' },
                 timeout: 5000,
                 onload: (res) => {
+                    console.log('[VSM] DoH response:', res.status, res.responseText.substring(0, 200));
                     try {
                         const data = JSON.parse(res.responseText);
                         if (data.Answer) {
@@ -105,8 +106,8 @@
                         resolve(null);
                     } catch(e) { resolve(null); }
                 },
-                onerror: () => resolve(null),
-                ontimeout: () => resolve(null)
+                onerror: (e) => { console.log('[VSM] DoH error:', e); resolve(null); },
+                ontimeout: () => { console.log('[VSM] DoH timeout'); resolve(null); }
             });
         });
     }
@@ -118,21 +119,28 @@
         let result = null;
 
         if (hostname) {
+            console.log('[VSM] Resolving CDN hostname:', hostname);
+            locationInfo = '[CDN ...\] ';
             const ip = await resolveHostToIP(hostname);
+            console.log('[VSM] Resolved IP:', ip);
 
             if (ip) {
                 try {
                     const apiUrl = 'http://ip-api.com/json/' + ip + '?lang=zh-CN';
                     const data = await fetchIPInfo(apiUrl);
+                    console.log('[VSM] IP location data:', data && data.country_code, data && data.city);
                     if (data && data.country_code) {
                         result = '[' + data.country_code + ' ' + (data.city || '') + ']'
                             .trim();
                         ipCache[hostname] = result;
                     }
-                } catch(e) {}
+                } catch(e) {
+                    console.log('[VSM] IP lookup error:', e);
+                }
             }
 
             if (!result) {
+                console.log('[VSM] CDN lookup failed, falling back to global');
                 await fetchGlobalLocation();
                 return;
             }
@@ -142,6 +150,7 @@
 
         if (result) {
             locationInfo = result;
+            console.log('[VSM] Location updated to:', result);
         }
     }
 
@@ -212,6 +221,7 @@
                     try {
                         const urlObj = new URL(url);
                         const hostname = urlObj.hostname;
+                console.log('[VSM] PerfObserver detected video resource:', hostname);
                         fetchPreciseLocation(hostname);
 
                         // \u8ba1\u7b97\u5b9e\u9645\u4e0b\u8f7d\u901f\u5ea6
@@ -329,7 +339,7 @@
 
         // \u5408\u5e76 PerfObserver \u6570\u636e
 
-        // video.buffered speed (reliable for cross-origin)
+        // video.buffered speed
         const video = document.querySelector('video');
         if (video && video.buffered.length > 0) {
             const now = Date.now();
@@ -365,3 +375,4 @@
         GM_registerMenuCommand((isCN ? "\u26a1 \u5f3a\u5236\u5237\u65b0 B\u7ad9\u9762\u677f" : "\u26a1 Force Refresh Bilibili Panel"), () => { enhanceNativeStats(); });
     }
 })();
+
