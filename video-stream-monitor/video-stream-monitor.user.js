@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.2.2
+// @version      1.2.3
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -87,16 +87,28 @@
     }
 
     // Resolve hostname to IP via Cloudflare DNS-over-HTTPS
-    async function resolveHostToIP(hostname) {
-        try {
-            const dnsRes = await fetchIPInfo('https://cloudflare-dns.com/dns-query?name=' + hostname + '&type=A', null);
-            if (dnsRes && dnsRes.Answer) {
-                for (const a of dnsRes.Answer) {
-                    if (a.type === 1 && a.data) return a.data;
-                }
-            }
-        } catch(e) {}
-        return null;
+    function resolveHostToIP(hostname) {
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: 'https://cloudflare-dns.com/dns-query?name=' + hostname + '&type=A',
+                headers: { 'Accept': 'application/dns-json' },
+                timeout: 5000,
+                onload: (res) => {
+                    try {
+                        const data = JSON.parse(res.responseText);
+                        if (data.Answer) {
+                            for (const a of data.Answer) {
+                                if (a.type === 1 && a.data) { resolve(a.data); return; }
+                            }
+                        }
+                        resolve(null);
+                    } catch(e) { resolve(null); }
+                },
+                onerror: () => resolve(null),
+                ontimeout: () => resolve(null)
+            });
+        });
     }
 
     async function fetchPreciseLocation(hostname = '') {
@@ -106,10 +118,8 @@
         let result = null;
 
         if (hostname) {
-            // Step 1: Resolve hostname to IP address
             const ip = await resolveHostToIP(hostname);
 
-            // Step 2: Query IP location via ip-api.com
             if (ip) {
                 try {
                     const apiUrl = 'http://ip-api.com/json/' + ip + '?lang=zh-CN';
@@ -122,7 +132,6 @@
                 } catch(e) {}
             }
 
-            // Fallback to global if CDN lookup failed
             if (!result) {
                 await fetchGlobalLocation();
                 return;
