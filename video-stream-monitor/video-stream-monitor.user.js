@@ -319,6 +319,6 @@
             fetchPreciseLocation('');
         });
         GM_registerMenuCommand((isCN ? "\u26a1 \u5f3a\u5236\u5237\u65b0 B\u7ad9\u9762\u677f" : "\u26a1 Force Refresh Bilibili Panel"), () => { enhanceNativeStats(); });
-        });
     }
 })();
+
