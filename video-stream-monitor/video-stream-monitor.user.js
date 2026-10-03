@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.2.1
+// @version      1.2.2
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -14,6 +14,7 @@
 // @connect      ip-api.com
 // @connect      ipapi.co
 // @connect      cp.cloudflare.com
+// @connect      cloudflare-dns.com
 // @run-at       document-end
 // @downloadURL  https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js
 // @updateURL    https://raw.githubusercontent.com/shuiyind/mycode/main/video-stream-monitor/video-stream-monitor.user.js
@@ -31,6 +32,8 @@
     let smoothSpeedText = "0.00 MB/s";
     const ipCache = {};
     let panelRefreshTimer = null;
+    let lastBuffered = 0;
+    let lastTime = Date.now();
     let perfObserver = null;
     let biliPanelObserver = null;
     let panelDebounceTimer = null;
@@ -83,6 +86,19 @@
         });
     }
 
+    // Resolve hostname to IP via Cloudflare DNS-over-HTTPS
+    async function resolveHostToIP(hostname) {
+        try {
+            const dnsRes = await fetchIPInfo('https://cloudflare-dns.com/dns-query?name=' + hostname + '&type=A', null);
+            if (dnsRes && dnsRes.Answer) {
+                for (const a of dnsRes.Answer) {
+                    if (a.type === 1 && a.data) return a.data;
+                }
+            }
+        } catch(e) {}
+        return null;
+    }
+
     async function fetchPreciseLocation(hostname = '') {
         if (hostname && ipCache[hostname]) { locationInfo = ipCache[hostname]; return; }
         if (!hostname && ipCache.__global) { locationInfo = ipCache.__global; return; }
@@ -90,18 +106,23 @@
         let result = null;
 
         if (hostname) {
-            // \u4f7f\u7528 ip-api.com \u67e5\u8be2\u7279\u5b9a IP\uff08\u652f\u6301 HTTP\uff0c\u65e0\u9700 HTTPS\uff09
-            try {
-                const apiUrl = 'http://ip-api.com/json/' + hostname + '?lang=zh-CN';
-                const data = await fetchIPInfo(apiUrl);
-                if (data && data.country_code) {
-                    result = '[' + data.country_code + ' ' + (data.city || '') + ']'
-                        .trim();
-                    ipCache[hostname] = result;
-                }
-            } catch(e) {}
+            // Step 1: Resolve hostname to IP address
+            const ip = await resolveHostToIP(hostname);
 
-            // \u5982\u679c IP \u67e5\u8be2\u5931\u8d25\uff0c\u56de\u9000\u5230\u5168\u5c40\u67e5\u8be2
+            // Step 2: Query IP location via ip-api.com
+            if (ip) {
+                try {
+                    const apiUrl = 'http://ip-api.com/json/' + ip + '?lang=zh-CN';
+                    const data = await fetchIPInfo(apiUrl);
+                    if (data && data.country_code) {
+                        result = '[' + data.country_code + ' ' + (data.city || '') + ']'
+                            .trim();
+                        ipCache[hostname] = result;
+                    }
+                } catch(e) {}
+            }
+
+            // Fallback to global if CDN lookup failed
             if (!result) {
                 await fetchGlobalLocation();
                 return;
@@ -298,6 +319,22 @@
         }
 
         // \u5408\u5e76 PerfObserver \u6570\u636e
+
+        // video.buffered speed (reliable for cross-origin)
+        const video = document.querySelector('video');
+        if (video && video.buffered.length > 0) {
+            const now = Date.now();
+            const elapsed = (now - lastTime) / 1000;
+            const currentEnd = video.buffered.end(video.buffered.length - 1);
+            const growth = currentEnd - lastBuffered;
+            if (elapsed > 0 && growth >= 0) {
+                const speed = (growth * 0.45) / elapsed;
+                speedWindow.push(speed);
+                if (speedWindow.length > 10) speedWindow.shift();
+            }
+            lastBuffered = currentEnd;
+            lastTime = now;
+        }
         if (speedWindow.length > 0) {
             const avgSpeed = speedWindow.reduce((a, b) => a + b, 0) / speedWindow.length;
             smoothSpeedText = avgSpeed.toFixed(2) + ' MB/s';
