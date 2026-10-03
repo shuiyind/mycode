@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.2.0
+// @version      1.2.1
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -321,4 +321,5 @@
         GM_registerMenuCommand((isCN ? "\u26a1 \u5f3a\u5236\u5237\u65b0 B\u7ad9\u9762\u677f" : "\u26a1 Force Refresh Bilibili Panel"), () => { enhanceNativeStats(); });
     }
 })();
+
 
