@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.3.0
+// @version      1.3.1
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -27,6 +27,10 @@
     const speedWindow = [];
     let smoothSpeedText = "0.00 MB/s";
     const ipCache = {};
+    let lastBufferedEnd = 0;
+    let lastBufferedTime = Date.now();
+    let panelVideoKbps = 0;
+    let panelVideoKbpsAt = 0;
 
     const infoSpan = document.createElement('span');
     infoSpan.id = 'native-monitor-info';
@@ -128,6 +132,12 @@
                     if (!isNaN(kbps) && kbps > 0) {
                         const mbpsValue = (kbps / 8000).toFixed(2);
 
+                        // 记录B站详情面板自带的视频速度，供顶栏速度兜底使用
+                        if (host.includes('bilibili') && /video\s*speed/i.test(text)) {
+                            panelVideoKbps = kbps;
+                            panelVideoKbpsAt = Date.now();
+                        }
+
                         if (!existingAddon) {
                             // 如果不存在MB/s标签，则创建一个新的
                             existingAddon = document.createElement('span');
@@ -212,11 +222,50 @@
         setupBiliObserver();
     }
 
+    // B站 CDN 跨域且无 Timing-Allow-Origin，transferSize 恒为 0，
+    // 此时用缓冲增量 × 当前清晰度码率估算真实下载速度
+    function getStreamBitrate(video) {
+        try {
+            const data = window.__playinfo__ && window.__playinfo__.data;
+            const streams = (data && data.dash && data.dash.video) || [];
+            const vw = video.videoWidth, vh = video.videoHeight;
+            if (!vw || !vh || !streams.length) return 0;
+            const match = streams.find(s => s.width === vw && s.height === vh)
+                || streams.find(s => Math.abs(s.height - vh) <= 8);
+            return match ? (match.bandwidth || 0) : 0;
+        } catch(e) { return 0; }
+    }
+
+    function estimateBiliSpeed(video) {
+        if (!video.buffered.length) return null;
+        const now = Date.now();
+        const dt = (now - lastBufferedTime) / 1000;
+        const end = video.buffered.end(video.buffered.length - 1);
+        const growth = end - lastBufferedEnd;
+        lastBufferedTime = now;
+        lastBufferedEnd = end;
+        if (dt <= 0 || growth <= 0) return 0; // 无新增缓冲（流畅播放或拖拽后）
+        const bitrate = getStreamBitrate(video);
+        if (!bitrate) return null;
+        return (growth * bitrate) / 8 / (1024 * 1024); // MB/s
+    }
+
     setInterval(() => {
         injectUI();
-        if (speedWindow.length > 0) {
-            const avgSpeed = speedWindow.reduce((a, b) => a + b, 0) / speedWindow.length;
-            smoothSpeedText = avgSpeed.toFixed(2) + " MB/s";
+        const video = document.querySelector('video');
+        let speed = null;
+
+        // 优先级：B站面板实测值 > transferSize 真实值 > B站码率估算
+        if (panelVideoKbps > 0 && Date.now() - panelVideoKbpsAt < 3000) {
+            speed = panelVideoKbps / 8000;
+        } else if (speedWindow.length > 0) {
+            speed = speedWindow.reduce((a, b) => a + b, 0) / speedWindow.length;
+        } else if (window.location.host.includes('bilibili') && video && !video.paused) {
+            speed = estimateBiliSpeed(video);
+        }
+
+        if (speed !== null) {
+            smoothSpeedText = speed.toFixed(2) + " MB/s";
         }
         infoSpan.textContent = `${locationInfo} | ${smoothSpeedText}`;
     }, 1000);

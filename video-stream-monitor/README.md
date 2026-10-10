@@ -35,6 +35,9 @@
 
 ## 📝 更新日志
 
+* **v1.3.1**:
+    * 修复 B 站顶栏速度始终显示 0.00 MB/s 的问题：B 站 CDN 跨域且无 `Timing-Allow-Origin`，`transferSize` 恒为 0。现改为三级取数：详情面板打开时直接取面板实测的 Video Speed；有 `transferSize` 样本（YouTube）时取真实值；否则用缓冲增量 × 当前清晰度码率（`__playinfo__` DASH 流按分辨率匹配）估算。
+* **v1.3.0**:
 * **v1.3.0**:
     * 修复网速数值并非真实下载速度的问题：`video.buffered` 返回的是视频时长而非字节数，现改用 `PerformanceObserver` 的 `transferSize/duration` 计算真实 MB/s。
     * 修复 B 站信息面板增强失效的问题：面板需用户点击"详情"后才挂载，原 10 秒限时轮询超时后永远不会挂载监听器；现改为持续等待、面板出现即接管，并在面板打开时立即刷新一次。
