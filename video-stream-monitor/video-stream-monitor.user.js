@@ -3,7 +3,7 @@
 // @name:zh-CN   视频流监控
 // @name:zh-TW   影片串流監控
 // @namespace    https://github.com/shuiyind/mycode
-// @version      1.3.1
+// @version      1.3.2
 // @description  Real-time monitoring of IP location, smooth network speed, and MB/s conversion for YouTube/Bilibili.
 // @author       shuiyind
 // @match        *://www.bilibili.com/video/*
@@ -124,8 +124,14 @@
                 // 检查是否已经有MB/s显示
                 let existingAddon = dataNode.querySelector('.mbps-addon');
 
-                // 取最后一个数字（值在行尾），并去掉千分位逗号
-                const nums = dataNode.innerText.replace(/,/g, '').match(/[\d.]+/g);
+                // 解析前先剔除addon自身的文本，避免取到addon自己的数字造成自我污染
+                let rawText = dataNode.innerText;
+                if (existingAddon) {
+                    rawText = rawText.replace(/\(\d+(\.\d+)?\s*MB\/s\)\s*$/, '');
+                }
+
+                // 取第一个数字（即Kbps值），并去掉千分位逗号
+                const nums = rawText.replace(/,/g, '').match(/[\d.]+/g);
 
                 if (nums) {
                     const kbps = parseFloat(nums[nums.length - 1]);

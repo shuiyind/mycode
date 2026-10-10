@@ -35,6 +35,9 @@
 
 ## 📝 更新日志
 
+* **v1.3.2**:
+    * 修复 YouTube 面板 MB/s 标签自我污染显示 0.00 的问题：addon 追加在数据节点内，"取最后一个数字"会取到 addon 自身的数值；现解析前剔除 addon 文本并改取第一个数字（Kbps 值）。
+* **v1.3.1**:
 * **v1.3.1**:
     * 修复 B 站顶栏速度始终显示 0.00 MB/s 的问题：B 站 CDN 跨域且无 `Timing-Allow-Origin`，`transferSize` 恒为 0。现改为三级取数：详情面板打开时直接取面板实测的 Video Speed；有 `transferSize` 样本（YouTube）时取真实值；否则用缓冲增量 × 当前清晰度码率（`__playinfo__` DASH 流按分辨率匹配）估算。
 * **v1.3.0**:
